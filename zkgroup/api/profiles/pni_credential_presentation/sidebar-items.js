@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["AnyPniCredentialPresentation",""]],"struct":[["PniCredentialPresentationV1",""],["PniCredentialPresentationV2",""]]};

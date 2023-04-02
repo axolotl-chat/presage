@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"derive":[["ProtobufMessage",""]],"mod":[["protocol",""]],"struct":[["GroupMasterKey",""],["GroupSecretParams",""],["ProfileKey",""],["Uuid","A Universally Unique Identifier (UUID)."],["UuidError","A general error that can occur when working with UUIDs."]],"trait":[["ProtobufMessage","A Protocol Buffers message."]]};

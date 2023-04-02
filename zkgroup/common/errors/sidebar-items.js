@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["ZkGroupDeserializationFailure","Deserialization failure in zkgroup"],["ZkGroupVerificationFailure","Verification failure in zkgroup"]]};
