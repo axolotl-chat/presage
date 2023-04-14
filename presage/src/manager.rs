@@ -857,7 +857,6 @@ impl<C: Store> Manager<C, Registered> {
                                         log::trace!("{group:?}");
                                     }
                                 }
-
                                 if let Err(e) =
                                     save_message(&mut state.config_store, content.clone())
                                 {
@@ -878,7 +877,6 @@ impl<C: Store> Manager<C, Registered> {
             }
         }))
     }
-
     /// Sends a messages to the provided [ServiceAddress].
     /// The timestamp should be set to now and is used by Signal mobile apps
     /// to order messages later, and apply reactions.
@@ -1157,12 +1155,34 @@ impl<C: Store> Manager<C, Registered> {
         }
         Ok(())
     }
+
     // Returns the metadatas for all threads.
-    pub async fn thread_metadatas(&self)
-        -> Result<impl Iterator<Item = Result<ThreadMetadata, Error<C::Error>>>, Error<C::Error>> {
-            let iter = self.config_store.thread_metadatas()?;
-            Ok(iter.map(|r| r.map_err(Into::into)))
-        }
+    pub async fn thread_metadatas(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<ThreadMetadata, Error<C::Error>>>, Error<C::Error>>
+    {
+        let iter = self.config_store.thread_metadatas()?;
+        Ok(iter.map(|r| r.map_err(Into::into)))
+    }
+
+    // Returns the metadata for a thread.
+    pub async fn thread_metadata(
+        &self,
+        thread: &Thread,
+    ) -> Result<Option<ThreadMetadata>, Error<C::Error>> {
+        let metadata = self.config_store.thread_metadata(&thread)?;
+        Ok(metadata)
+    }
+
+    // Saves the metadata for a thread.
+    pub async fn save_thread_metadata(
+        &mut self, 
+        metadata: ThreadMetadata
+    ) -> Result<(), Error<C::Error>> {
+        self.config_store.save_thread_metadata(metadata)?;
+        Ok(())
+    }
+
     #[deprecated = "use Manager::contact_by_id"]
     pub fn get_contacts(
         &self,
