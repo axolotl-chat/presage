@@ -86,6 +86,9 @@ pub trait Store:
     fn save_contacts(&mut self, contacts: impl Iterator<Item = Contact>)
         -> Result<(), Self::Error>;
 
+    /// Save a single contact
+    fn save_contact(&mut self, contact: Contact) -> Result<(), Self::Error>;
+
     /// Get an iterator on all stored (synchronized) contacts
     fn contacts(&self) -> Result<Self::ContactsIter, Self::Error>;
 

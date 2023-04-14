@@ -25,6 +25,7 @@ use libsignal_service::{
         protocol::{KeyPair, PrivateKey, PublicKey},
         Content, Envelope, ProfileKey, PushService, Uuid,
     },
+    profile_name::ProfileName,
     proto::{data_message::Delete, sync_message, AttachmentPointer, GroupContextV2, NullMessage},
     provisioning::{
         generate_registration_id, LinkingManager, ProvisioningManager, SecondaryDeviceProvisioning,
@@ -699,6 +700,10 @@ impl<C: Store> Manager<C, Registered> {
         Ok(iter.map(|r| r.map_err(Into::into)))
     }
 
+    /// Save a contact to the [Store]
+    pub fn save_contact(&mut self, contact: Contact) -> Result<(), C::Error> {
+        self.config_store.save_contact(contact)
+    }
     /// Get a group (either from the local cache, or fetch it remotely) using its master key
     pub fn group(&self, master_key_bytes: &[u8]) -> Result<Option<Group>, Error<C::Error>> {
         Ok(self.config_store.group(master_key_bytes.try_into()?)?)
@@ -1116,6 +1121,42 @@ impl<C: Store> Manager<C, Registered> {
         }
     }
 
+    pub async fn request_contacts_update_from_profile(&mut self) -> Result<(), Error<C::Error>> {
+        log::debug!("requesting contacts update from profile");
+        for contact in self.contacts()? {
+            let mut contact = contact?;
+            if contact.name.is_empty() {
+                let k = contact.profile_key.to_vec();
+                let profile_key: [u8; 32] = match k.try_into() {
+                    Ok(key) => key,
+                    Err(_) => continue,
+                };
+                let profile = match self
+                    .retrieve_profile_by_uuid(contact.uuid, ProfileKey { bytes: profile_key })
+                    .await
+                {
+                    Ok(profile) => profile,
+                    Err(_) => continue,
+                };
+                let name = profile.name.unwrap_or(ProfileName {
+                    given_name: match contact.phone_number {
+                        Some(_) => "".to_string(),
+                        None => continue,
+                    },
+                    family_name: None,
+                });
+                contact.name = name.to_string();
+                match self.save_contact(contact) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("Error saving contact: {:?}", e);
+                    }
+                };
+                println!("Updating contact: {:?}", name);
+            }
+        }
+        Ok(())
+    }
     // Returns the metadatas for all threads.
     pub async fn thread_metadatas(&self)
         -> Result<impl Iterator<Item = Result<ThreadMetadata, Error<C::Error>>>, Error<C::Error>> {

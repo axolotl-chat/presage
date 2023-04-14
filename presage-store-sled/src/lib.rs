@@ -423,6 +423,12 @@ impl Store for SledStore {
         Ok(())
     }
 
+    fn save_contact(&mut self, contact: Contact) -> Result<(), Self::Error> {
+        self.insert(SLED_TREE_CONTACTS, contact.uuid, contact)?;
+        debug!("saved contact");
+        Ok(())
+    }
+
     fn contacts(&self) -> Result<Self::ContactsIter, SledStoreError> {
         Ok(SledContactsIter {
             iter: self.tree(SLED_TREE_CONTACTS)?.iter(),
