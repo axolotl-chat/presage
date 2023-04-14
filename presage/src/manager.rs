@@ -42,7 +42,7 @@ use libsignal_service::{
 };
 use libsignal_service_hyper::push_service::HyperPushService;
 
-use crate::{cache::CacheCell, presage_serde::serde_profile_key, Thread};
+use crate::{cache::CacheCell, presage_serde::serde_profile_key, Thread, ThreadMetadata};
 use crate::{store::Store, Error};
 
 type ServiceCipher<C> = cipher::ServiceCipher<C, C, C, C, C, StdRng>;
@@ -1115,6 +1115,13 @@ impl<C: Store> Manager<C, Registered> {
             },
         }
     }
+
+    // Returns the metadatas for all threads.
+    pub async fn thread_metadatas(&self)
+        -> Result<impl Iterator<Item = Result<ThreadMetadata, Error<C::Error>>>, Error<C::Error>> {
+            let iter = self.config_store.thread_metadatas()?;
+            Ok(iter.map(|r| r.map_err(Into::into)))
+        }
     #[deprecated = "use Manager::contact_by_id"]
     pub fn get_contacts(
         &self,
