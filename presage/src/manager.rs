@@ -42,7 +42,7 @@ use libsignal_service::{
 };
 use libsignal_service_hyper::push_service::HyperPushService;
 
-use crate::{cache::CacheCell, serde::serde_profile_key, Thread};
+use crate::{cache::CacheCell, presage_serde::serde_profile_key, Thread};
 use crate::{store::Store, Error};
 
 type ServiceCipher<C> = cipher::ServiceCipher<C, C, C, C, C, StdRng>;
