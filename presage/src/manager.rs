@@ -857,8 +857,24 @@ impl<C: Store> Manager<C, Registered> {
                                         log::trace!("{group:?}");
                                     }
                                 }
+                                let thread = Thread::try_from(&content).unwrap();
+
+                                let store = &mut state.config_store;
+
+                                match store.thread_metadata(&thread) {
+                                    Ok(metadata) => {
+                                        if metadata.is_none() {
+                                            // Create a new thread metadata and save it
+                                            create_thread_metadata(store, &thread).ok()?;
+                                        }
+                                    }
+                                    Err(e) => {
+                                        log::error!("Error getting thread metadata: {}", e);
+                                    }
+
+                                };
                                 if let Err(e) =
-                                    save_message(&mut state.config_store, content.clone())
+                                    save_message(store, content.clone())
                                 {
                                     log::error!("Error saving message to store: {}", e);
                                 }
@@ -1175,9 +1191,9 @@ impl<C: Store> Manager<C, Registered> {
     }
 
     // Saves the metadata for a thread.
-    pub async fn save_thread_metadata(
-        &mut self, 
-        metadata: ThreadMetadata
+    pub fn save_thread_metadata(
+        &mut self,
+        metadata: ThreadMetadata,
     ) -> Result<(), Error<C::Error>> {
         self.config_store.save_thread_metadata(metadata)?;
         Ok(())
@@ -1291,4 +1307,47 @@ fn save_message_with_thread<C: Store>(
 fn save_message<C: Store>(config_store: &mut C, message: Content) -> Result<(), Error<C::Error>> {
     let thread = Thread::try_from(&message)?;
     save_message_with_thread(config_store, message, thread)
+}
+
+pub fn save_thread_metadata<C: Store>(
+    config_store: &mut C,
+    metadata: ThreadMetadata,
+) -> Result<(), Error<C::Error>> {
+    config_store.save_thread_metadata(metadata)?;
+    Ok(())
+}
+
+pub fn create_thread_metadata<C: Store>(
+    config_store: &mut C,
+    thread: &Thread,
+) -> Result<ThreadMetadata, Error<C::Error>> {
+    let title = match thread {
+        Thread::Contact(uuid) => {
+            let contact = match config_store.contact_by_id(*uuid) {
+                Ok(contact) => contact,
+                Err(e) => {
+                    log::info!("Error getting contact by id: {}, {:?}", e, uuid);
+                    None
+                }
+            };
+            match contact {
+                Some(contact) => contact.name,
+                None => uuid.to_string(),
+            }
+        }
+        Thread::Group(id) => match config_store.group(*id)? {
+            Some(group) => group.title,
+            None => "".to_string(),
+        },
+    };
+    let metadata = ThreadMetadata {
+        thread: thread.clone(),
+        unread_messages_count: 0,
+        last_message: None,
+        title: Some(title),
+        archived: false,
+        muted: false,
+    };
+    save_thread_metadata(config_store, metadata.clone())?;
+    Ok(metadata)
 }

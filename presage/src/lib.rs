@@ -37,20 +37,19 @@ const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "-rs-", env!("CARGO_PKG
 // TODO: open a PR in libsignal and make sure the bytes can be read from `GroupMasterKey` instead of using this type
 pub type GroupMasterKeyBytes = [u8; 32];
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ThreadMetadata {
     pub thread: Thread,
     pub last_message: Option<ThreadMetadataMessageContent>,
     pub unread_messages_count: usize,
-    pub contact: Option<prelude::Contact>,
     pub title: Option<String>,
     pub archived: bool,
     pub muted: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ThreadMetadataMessageContent {
-    pub sender: prelude::ServiceAddress,
+    pub sender: prelude::Uuid,
     pub timestamp: u64,
     pub message: Option<String>,
 
