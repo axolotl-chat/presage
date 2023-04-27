@@ -2,7 +2,7 @@ use std::{
     fmt,
     ops::RangeBounds,
     sync::Arc,
-    time::{Duration, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use futures::{channel::mpsc, channel::oneshot, future, pin_mut, AsyncReadExt, Stream, StreamExt};
@@ -22,11 +22,14 @@ use libsignal_service::{
     models::Contact,
     prelude::{
         phonenumber::PhoneNumber,
-        protocol::{KeyPair, PrivateKey, PublicKey},
-        Content, Envelope, ProfileKey, PushService, Uuid,
+        protocol::{KeyPair, PrivateKey, PublicKey, SenderCertificate},
+        Content, ProfileKey, PushService, Uuid,
+    },
+    proto::{
+        data_message::Delete, sync_message, AttachmentPointer, Envelope, GroupContextV2,
+        NullMessage,
     },
     profile_name::ProfileName,
-    proto::{data_message::Delete, sync_message, AttachmentPointer, GroupContextV2, NullMessage},
     provisioning::{
         generate_registration_id, LinkingManager, ProvisioningManager, SecondaryDeviceProvisioning,
         VerificationCodeResponse,
@@ -37,6 +40,7 @@ use libsignal_service::{
     },
     receiver::MessageReceiver,
     sender::{AttachmentSpec, AttachmentUploadError},
+    unidentified_access::UnidentifiedAccess,
     utils::{serde_private_key, serde_public_key, serde_signaling_key},
     websocket::SignalWebSocket,
     AccountManager, Profile, ServiceAddress,
@@ -93,7 +97,7 @@ pub struct Registered {
     #[serde(skip)]
     identified_websocket: Arc<Mutex<Option<SignalWebSocket>>>,
     #[serde(skip)]
-    unidentified_websocket: Arc<Mutex<Option<SignalWebSocket>>>,
+    unidentified_sender_certificate: Option<SenderCertificate>,
 
     pub signal_servers: SignalServers,
     pub device_name: Option<String>,
@@ -339,7 +343,7 @@ impl<C: Store> Manager<C, Linking> {
             state: Registered {
                 push_service_cache: CacheCell::default(),
                 identified_websocket: Default::default(),
-                unidentified_websocket: Default::default(),
+                unidentified_sender_certificate: Default::default(),
                 signal_servers,
                 device_name: Some(device_name),
                 phone_number,
@@ -463,7 +467,7 @@ impl<C: Store> Manager<C, Confirmation> {
             state: Registered {
                 push_service_cache: CacheCell::default(),
                 identified_websocket: Default::default(),
-                unidentified_websocket: Default::default(),
+                unidentified_sender_certificate: Default::default(),
                 signal_servers: self.state.signal_servers,
                 device_name: None,
                 phone_number,
@@ -631,6 +635,42 @@ impl<C: Store> Manager<C, Registered> {
         Ok(())
     }
 
+    async fn sender_certificate(&mut self) -> Result<SenderCertificate, Error<C::Error>> {
+        let needs_renewal = |sender_certificate: Option<&SenderCertificate>| -> bool {
+            if sender_certificate.is_none() {
+                return true;
+            }
+
+            let seconds_since_epoch = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs();
+
+            if let Some(expiration) = sender_certificate.and_then(|s| s.expiration().ok()) {
+                expiration >= seconds_since_epoch - 600
+            } else {
+                true
+            }
+        };
+
+        if needs_renewal(self.state.unidentified_sender_certificate.as_ref()) {
+            let sender_certificate = self
+                .push_service()?
+                .get_uuid_only_sender_certificate()
+                .await?;
+
+            self.state
+                .unidentified_sender_certificate
+                .replace(sender_certificate);
+        }
+
+        Ok(self
+            .state
+            .unidentified_sender_certificate
+            .clone()
+            .expect("logic error"))
+    }
+
     pub async fn submit_recaptcha_challenge(
         &self,
         token: &str,
@@ -739,15 +779,9 @@ impl<C: Store> Manager<C, Registered> {
         let pipe = MessageReceiver::new(self.push_service()?)
             .create_message_pipe(credentials)
             .await?;
-        let unidentified_ws = self
-            .push_service()?
-            .ws("/v1/websocket/", None, true)
-            .await?;
+
         self.state.identified_websocket.lock().replace(pipe.ws());
-        self.state
-            .unidentified_websocket
-            .lock()
-            .replace(unidentified_ws);
+
         Ok(pipe.stream())
     }
 
@@ -881,7 +915,9 @@ impl<C: Store> Manager<C, Registered> {
 
                                 return Some((content, state));
                             }
-                            Ok(None) => debug!("Empty envelope..., message will be skipped!"),
+                            Ok(None) => {
+                                debug!("Empty envelope..., message will be skipped!")
+                            }
                             Err(e) => {
                                 error!("Error opening envelope: {:?}, message will be skipped!", e);
                             }
@@ -902,16 +938,25 @@ impl<C: Store> Manager<C, Registered> {
         message: impl Into<ContentBody>,
         timestamp: u64,
     ) -> Result<(), Error<C::Error>> {
-        let mut sender = self.new_message_sender()?;
+        let mut sender = self.new_message_sender().await?;
 
         let online_only = false;
         let recipient = recipient_addr.into();
         let content_body: ContentBody = message.into();
 
+        let sender_certificate = self.sender_certificate().await?;
+        let unidentified_access =
+            self.config_store
+                .profile_key(&recipient.uuid)?
+                .map(|profile_key| UnidentifiedAccess {
+                    key: profile_key.derive_access_key(),
+                    certificate: sender_certificate.clone(),
+                });
+
         sender
             .send_message(
                 &recipient,
-                None,
+                unidentified_access,
                 content_body.clone(),
                 timestamp,
                 online_only,
@@ -941,7 +986,7 @@ impl<C: Store> Manager<C, Registered> {
         &self,
         attachments: Vec<(AttachmentSpec, Vec<u8>)>,
     ) -> Result<Vec<Result<AttachmentPointer, AttachmentUploadError>>, Error<C::Error>> {
-        let sender = self.new_message_sender()?;
+        let sender = self.new_message_sender().await?;
         let upload = future::join_all(attachments.into_iter().map(move |(spec, contents)| {
             let mut sender = sender.clone();
             async move { sender.upload_attachment(spec, contents).await }
@@ -956,19 +1001,29 @@ impl<C: Store> Manager<C, Registered> {
         message: DataMessage,
         timestamp: u64,
     ) -> Result<(), Error<C::Error>> {
-        let mut sender = self.new_message_sender()?;
+        let mut sender = self.new_message_sender().await?;
 
         let mut groups_manager = self.groups_manager()?;
         let Some(group) = upsert_group(&self.config_store, &mut groups_manager, master_key_bytes, &0).await? else {
             return Err(Error::UnknownGroup);
         };
 
-        let recipients: Vec<_> = group
+        let sender_certificate = self.sender_certificate().await?;
+        let mut recipients = Vec::new();
+        for member in group
             .members
             .into_iter()
             .filter(|m| m.uuid != self.state.uuid)
-            .map(|m| (m.uuid.into(), None))
-            .collect();
+        {
+            let unidentified_access =
+                self.config_store
+                    .profile_key(&member.uuid)?
+                    .map(|profile_key| UnidentifiedAccess {
+                        key: profile_key.derive_access_key(),
+                        certificate: sender_certificate.clone(),
+                    });
+            recipients.push((member.uuid.into(), unidentified_access));
+        }
 
         let online_only = false;
         let results = sender
@@ -1063,7 +1118,7 @@ impl<C: Store> Manager<C, Registered> {
     }
 
     /// Creates a new message sender.
-    fn new_message_sender(&self) -> Result<MessageSender<C>, Error<C::Error>> {
+    async fn new_message_sender(&self) -> Result<MessageSender<C>, Error<C::Error>> {
         let local_addr = ServiceAddress {
             uuid: self.state.uuid,
         };
@@ -1075,12 +1130,12 @@ impl<C: Store> Manager<C, Registered> {
             .clone()
             .ok_or(Error::MessagePipeNotStarted)?;
 
-        let unidentified_websocket = self
-            .state
-            .unidentified_websocket
-            .lock()
-            .clone()
-            .ok_or(Error::MessagePipeNotStarted)?;
+        let service_configuration: ServiceConfiguration = self.state.signal_servers.into();
+        let mut unidentified_push_service =
+            HyperPushService::new(service_configuration, None, crate::USER_AGENT.to_string());
+        let unidentified_websocket = unidentified_push_service
+            .ws("/v1/websocket/", None, false)
+            .await?;
 
         Ok(MessageSender::new(
             identified_websocket,
@@ -1230,7 +1285,7 @@ async fn upsert_group<C: Store>(
 ) -> Result<Option<Group>, Error<C::Error>> {
     let save_group = match config_store.group(master_key_bytes.try_into()?) {
         Ok(Some(group)) => {
-            log::debug!("loaded group from local db {group:?}");
+            log::debug!("loaded group from local db {}", group.title);
             group.revision < *revision
         }
         Ok(None) => true,
@@ -1262,6 +1317,20 @@ fn save_message_with_thread<C: Store>(
     message: Content,
     thread: Thread,
 ) -> Result<(), Error<C::Error>> {
+    // update recipient profile keys
+    if let ContentBody::DataMessage(DataMessage {
+        profile_key: Some(profile_key_bytes),
+        ..
+    }) = &message.body
+    {
+        if let Ok(profile_key_bytes) = profile_key_bytes.clone().try_into() {
+            let sender_uuid = message.metadata.sender.uuid;
+            let profile_key = ProfileKey::create(profile_key_bytes);
+            log::debug!("inserting profile key for {sender_uuid}");
+            config_store.upsert_profile_key(&sender_uuid, profile_key)?;
+        }
+    }
+
     // only save DataMessage and SynchronizeMessage (sent)
     match &message.body {
         ContentBody::NullMessage(_) => config_store.save_message(&thread, message)?,
