@@ -611,7 +611,8 @@ impl Store for SledStore {
 
     fn save_thread_metadata(&mut self, metadata: ThreadMetadata) -> Result<(), Self::Error> {
         let key = self.thread_metadata_key(&metadata.thread);
-        self.insert(SLED_TREE_THREADS_METADATA, key, metadata)
+        self.insert(SLED_TREE_THREADS_METADATA, key, metadata)?;
+        Ok(())
     }
 
     fn thread_metadata(&self, thread: &Thread) -> Result<Option<ThreadMetadata>, Self::Error> {
@@ -620,7 +621,8 @@ impl Store for SledStore {
     }
 
     fn thread_metadatas(&self) -> Result<<Self as presage::Store>::ThreadMetadataIter, <Self as presage::Store>::Error> {
-        let tree = self.tree(SLED_TREE_THREADS_METADATA)?;
+        let tree = self.read()
+        .open_tree(SLED_TREE_THREADS_METADATA)?;
         let iter = tree.iter();
         Ok(SledThreadMetadataIter {
             cipher: self.cipher.clone(),
