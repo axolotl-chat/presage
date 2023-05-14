@@ -1274,6 +1274,78 @@ impl<C: Store> Manager<C, Registered> {
         }
         Ok(())
     }
+    pub async fn request_contact_update_from_profile(
+        &mut self,
+        uuid: Uuid,
+    ) -> Result<Contact, Error<C::Error>> {
+        log::debug!("requesting contacts update from profile");
+        let contact = self.contact_by_id(&uuid)?;
+        match contact {
+            Some(mut contact) => {
+                let k = contact.profile_key.to_vec();
+                let profile_key: [u8; 32] = match k.try_into() {
+                    Ok(key) => key,
+                    Err(_) => {
+                        log::debug!("Error converting profile key to bytes");
+                        return Err(Error::UnknownContact)
+                    },
+                };
+                let profile = match self
+                    .retrieve_profile_by_uuid(contact.uuid, ProfileKey { bytes: profile_key })
+                    .await
+                {
+                    Ok(profile) => profile,
+                    Err(e) => {
+                        log::debug!("Error retrieving profile {}", e);
+                        return Err(Error::UnknownContact)
+                    }
+                };
+                let name = profile.name.unwrap_or(ProfileName {
+                    given_name: match contact.phone_number {
+                        Some(_) => "".to_string(),
+                        None => "Unknown Contact".to_string(),
+                    },
+                    family_name: None,
+                });
+                contact.name = name.to_string();
+                match self.save_contact(contact) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("Error saving contact: {:?}", e);
+                    }
+                };
+                contact = self.contact_by_id(&uuid)?.unwrap();
+
+                println!("Updating contact: {:?}", name);
+
+                let contact_thread = Thread::Contact(uuid);
+
+                match self.thread_metadata(&contact_thread).await? {
+                    Some(thread_metadata) => {
+                        if thread_metadata.title != Some(name.to_string()) {
+                            let mut thread_metadata = thread_metadata;
+                            thread_metadata.title = Some(name.to_string());
+                            self.save_thread_metadata(thread_metadata)?;
+                        }
+                    }
+                    None => {
+                        log::debug!("no thread metadata for contact {}", uuid);
+
+                        self.save_thread_metadata(ThreadMetadata {
+                            thread: contact_thread,
+                            last_message: None,
+                            unread_messages_count: 0,
+                            title: Some(name.to_string()),
+                            archived: false,
+                            muted: false,
+                        })?;
+                    }
+                };
+                return Ok(contact);
+            }
+            None => return Err(Error::UnknownContact),
+        }
+    }
 
     // Returns the metadatas for all threads.
     pub async fn thread_metadatas(
