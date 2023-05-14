@@ -25,11 +25,11 @@ use libsignal_service::{
         protocol::{KeyPair, PrivateKey, PublicKey, SenderCertificate},
         Content, ProfileKey, PushService, Uuid,
     },
+    profile_name::ProfileName,
     proto::{
         data_message::Delete, sync_message, AttachmentPointer, Envelope, GroupContextV2,
         NullMessage,
     },
-    profile_name::ProfileName,
     provisioning::{
         generate_registration_id, LinkingManager, ProvisioningManager, SecondaryDeviceProvisioning,
         VerificationCodeResponse,
@@ -933,11 +933,8 @@ impl<C: Store> Manager<C, Registered> {
                                     Err(e) => {
                                         log::error!("Error getting thread metadata: {}", e);
                                     }
-
                                 };
-                                if let Err(e) =
-                                    save_message(store, content.clone())
-                                {
+                                if let Err(e) = save_message(store, content.clone()) {
                                     log::error!("Error saving message to store: {}", e);
                                 }
 
@@ -1217,6 +1214,7 @@ impl<C: Store> Manager<C, Registered> {
         log::debug!("requesting contacts update from profile");
         for contact in self.contacts()? {
             let mut contact = contact?;
+            let uuid = contact.uuid;
             if contact.name.is_empty() {
                 let k = contact.profile_key.to_vec();
                 let profile_key: [u8; 32] = match k.try_into() {
@@ -1246,6 +1244,33 @@ impl<C: Store> Manager<C, Registered> {
                 };
                 println!("Updating contact: {:?}", name);
             }
+            let contact_thread = Thread::Contact(uuid);
+
+            match self.thread_metadata(&contact_thread).await? {
+                Some(thread_metadata) => {
+                    let title = self.get_title_for_thread(&contact_thread).await?;
+                    if thread_metadata.title == Some(title.clone()) {
+                        continue;
+                    }
+                    let mut thread_metadata = thread_metadata;
+                    thread_metadata.title = Some(title);
+                    self.save_thread_metadata(thread_metadata)?;
+                }
+                None => {
+                    log::debug!("no thread metadata for contact {}", uuid);
+                    let title = self.get_title_for_thread(&contact_thread).await?;
+
+                    self.save_thread_metadata(ThreadMetadata {
+                        thread: contact_thread,
+                        last_message: None,
+                        unread_messages_count: 0,
+                        title: Some(title),
+                        archived: false,
+                        muted: false,
+                    })?;
+                    continue;
+                }
+            };
         }
         Ok(())
     }
