@@ -27,8 +27,8 @@ use libsignal_service::{
     },
     profile_name::ProfileName,
     proto::{
-        data_message::Delete, sync_message, AttachmentPointer, Envelope, GroupContextV2,
-        NullMessage,
+        data_message::{contact, Delete},
+        sync_message, AttachmentPointer, Envelope, GroupContextV2, NullMessage, Verified,
     },
     provisioning::{
         generate_registration_id, LinkingManager, ProvisioningManager, SecondaryDeviceProvisioning,
@@ -919,6 +919,51 @@ impl<C: Store> Manager<C, Registered> {
                                         log::trace!("{group:?}");
                                     }
                                 }
+                                let uuid = content.metadata.sender.uuid.clone();
+                                match state.config_store.contact_by_id(uuid) {
+                                    Ok(Some(_)) => {
+                                    }
+                                    Ok(None) => {
+                                        // Fetch the profile of the contact
+                                        if let ContentBody::DataMessage(DataMessage {
+                                            profile_key: Some(profile_key),
+                                            ..
+                                        }) = &content.body
+                                        {
+                                            let contact = Contact {
+                                                uuid: uuid.clone(),
+                                                name: "".to_string(),
+                                                color: None,
+                                                phone_number: None,
+                                                verified: Verified {
+                                                    identity_key: None,
+                                                    state: None,
+                                                    destination_uuid: None,
+                                                    null_message: None,
+                                                },
+                                                blocked: false,
+                                                expire_timer: 0,
+                                                inbox_position: 0,
+                                                archived: false,
+                                                avatar: None,
+                                                profile_key: profile_key.to_vec(),
+                                            };
+                                            match state.config_store.save_contact(contact) {
+                                                Ok(_) => {
+                                                    log::info!("Saved contact: {}", uuid);
+                                                }
+                                                Err(e) => {
+                                                    log::error!("Error saving contact: {}", e);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Err(e) => {
+                                        log::error!("Error getting contact: {}", e);
+                                    }
+                                }
+
                                 let thread = Thread::try_from(&content).unwrap();
 
                                 let store = &mut state.config_store;
