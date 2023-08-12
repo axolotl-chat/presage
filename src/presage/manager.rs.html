@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `presage/src/manager.rs`."><title>manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-c4dbdcde0fbd8430.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" disabled href="../../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" disabled href="../../static.files/ayu-be46fdc453a55015.css"><script src="../../static.files/storage-3891ce972e3a2bf8.js"></script><script defer src="../../static.files/source-script-1b95b7cca98b26e5.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-98a684e84ae5b08b.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../presage/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `presage/src/manager.rs`."><title>manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="presage" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.1 (eb26296b5 2023-08-03)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../presage/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1350,7 +1350,78 @@
 <a href="#1350" id="1350">1350</a>
 <a href="#1351" id="1351">1351</a>
 <a href="#1352" id="1352">1352</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
+<a href="#1355" id="1355">1355</a>
+<a href="#1356" id="1356">1356</a>
+<a href="#1357" id="1357">1357</a>
+<a href="#1358" id="1358">1358</a>
+<a href="#1359" id="1359">1359</a>
+<a href="#1360" id="1360">1360</a>
+<a href="#1361" id="1361">1361</a>
+<a href="#1362" id="1362">1362</a>
+<a href="#1363" id="1363">1363</a>
+<a href="#1364" id="1364">1364</a>
+<a href="#1365" id="1365">1365</a>
+<a href="#1366" id="1366">1366</a>
+<a href="#1367" id="1367">1367</a>
+<a href="#1368" id="1368">1368</a>
+<a href="#1369" id="1369">1369</a>
+<a href="#1370" id="1370">1370</a>
+<a href="#1371" id="1371">1371</a>
+<a href="#1372" id="1372">1372</a>
+<a href="#1373" id="1373">1373</a>
+<a href="#1374" id="1374">1374</a>
+<a href="#1375" id="1375">1375</a>
+<a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
+<a href="#1378" id="1378">1378</a>
+<a href="#1379" id="1379">1379</a>
+<a href="#1380" id="1380">1380</a>
+<a href="#1381" id="1381">1381</a>
+<a href="#1382" id="1382">1382</a>
+<a href="#1383" id="1383">1383</a>
+<a href="#1384" id="1384">1384</a>
+<a href="#1385" id="1385">1385</a>
+<a href="#1386" id="1386">1386</a>
+<a href="#1387" id="1387">1387</a>
+<a href="#1388" id="1388">1388</a>
+<a href="#1389" id="1389">1389</a>
+<a href="#1390" id="1390">1390</a>
+<a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
+<a href="#1418" id="1418">1418</a>
+<a href="#1419" id="1419">1419</a>
+<a href="#1420" id="1420">1420</a>
+<a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     fmt,
     ops::RangeBounds,
     sync::Arc,
@@ -1369,7 +1440,7 @@
     cipher,
     configuration::{ServiceConfiguration, SignalServers, SignalingKey},
     content::{ContentBody, DataMessage, DataMessageFlags, Metadata, SyncMessage},
-    groups_v2::{Group, GroupsManager, InMemoryCredentialsCache},
+    groups_v2::{decrypt_group, Group, GroupsManager, InMemoryCredentialsCache},
     messagepipe::ServiceCredentials,
     models::Contact,
     prelude::{
@@ -1386,8 +1457,8 @@
         VerificationCodeResponse,
     },
     push_service::{
-        AccountAttributes, DeviceCapabilities, DeviceId, ProfileKeyExt, ServiceError, ServiceIds,
-        WhoAmIResponse, DEFAULT_DEVICE_ID,
+        AccountAttributes, DeviceCapabilities, DeviceId, ServiceError, ServiceIds, WhoAmIResponse,
+        DEFAULT_DEVICE_ID,
     },
     receiver::MessageReceiver,
     sender::{AttachmentSpec, AttachmentUploadError},
@@ -1660,6 +1731,7 @@
                     phone_number,
                     device_id: DeviceId { device_id },
                     registration_id,
+                    pni_registration_id,
                     profile_key,
                     service_ids,
                     aci_private_key,
@@ -1682,7 +1754,7 @@
                         password,
                         device_id: <span class="prelude-val">Some</span>(device_id),
                         registration_id,
-                        pni_registration_id: <span class="prelude-val">None</span>,
+                        pni_registration_id: <span class="prelude-val">Some</span>(pni_registration_id),
                         aci_public_key,
                         aci_private_key,
                         pni_public_key: <span class="prelude-val">Some</span>(pni_public_key),
@@ -1788,7 +1860,7 @@
                     fetches_messages: <span class="bool-val">true</span>,
                     pin: <span class="prelude-val">None</span>,
                     registration_lock: <span class="prelude-val">None</span>,
-                    unidentified_access_key: <span class="prelude-val">Some</span>(profile_key.derive_access_key()),
+                    unidentified_access_key: <span class="prelude-val">Some</span>(profile_key.derive_access_key().to_vec()),
                     unrestricted_unidentified_access: <span class="bool-val">false</span>, <span class="comment">// TODO: make this configurable?
                     </span>discoverable_by_phone_number: <span class="bool-val">true</span>,
                     capabilities: DeviceCapabilities {
@@ -1875,12 +1947,13 @@
         <span class="kw">let </span><span class="kw-2">mut </span>account_manager =
             AccountManager::new(<span class="self">self</span>.push_service()<span class="question-mark">?</span>, <span class="prelude-val">Some</span>(<span class="self">self</span>.state.profile_key));
 
-        <span class="kw">let </span>(pre_keys_offset_id, next_signed_pre_key_id) = account_manager
+        <span class="kw">let </span>(pre_keys_offset_id, next_signed_pre_key_id, next_pq_pre_key_id) = account_manager
             .update_pre_key_bundle(
                 <span class="kw-2">&amp;mut </span><span class="self">self</span>.config_store.clone(),
                 <span class="kw-2">&amp;mut </span><span class="self">self</span>.rng,
                 <span class="self">self</span>.config_store.pre_keys_offset_id()<span class="question-mark">?</span>,
                 <span class="self">self</span>.config_store.next_signed_pre_key_id()<span class="question-mark">?</span>,
+                <span class="self">self</span>.config_store.next_pq_pre_key_id()<span class="question-mark">?</span>,
                 <span class="bool-val">true</span>,
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1889,6 +1962,8 @@
             .set_pre_keys_offset_id(pre_keys_offset_id)<span class="question-mark">?</span>;
         <span class="self">self</span>.config_store
             .set_next_signed_pre_key_id(next_signed_pre_key_id)<span class="question-mark">?</span>;
+        <span class="self">self</span>.config_store
+            .set_next_pq_pre_key_id(next_pq_pre_key_id)<span class="question-mark">?</span>;
 
         <span class="macro">trace!</span>(<span class="string">&quot;registered pre keys&quot;</span>);
         <span class="prelude-val">Ok</span>(())
@@ -1921,7 +1996,7 @@
                 fetches_messages: <span class="bool-val">true</span>,
                 pin: <span class="prelude-val">None</span>,
                 registration_lock: <span class="prelude-val">None</span>,
-                unidentified_access_key: <span class="prelude-val">Some</span>(<span class="self">self</span>.state.profile_key.derive_access_key()),
+                unidentified_access_key: <span class="prelude-val">Some</span>(<span class="self">self</span>.state.profile_key.derive_access_key().to_vec()),
                 unrestricted_unidentified_access: <span class="bool-val">false</span>,
                 discoverable_by_phone_number: <span class="bool-val">true</span>,
                 capabilities: DeviceCapabilities {
@@ -2293,6 +2368,9 @@
     <span class="doccomment">/// Sends a messages to the provided [ServiceAddress].
     /// The timestamp should be set to now and is used by Signal mobile apps
     /// to order messages later, and apply reactions.
+    ///
+    /// This method will automatically update the [DataMessage::expiration_timer] if it is set to
+    /// [None] such that the chat will keep the current expire timer.
     </span><span class="kw">pub async fn </span>send_message(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         recipient_addr: <span class="kw">impl </span>Into&lt;ServiceAddress&gt;,
@@ -2303,14 +2381,31 @@
 
         <span class="kw">let </span>online_only = <span class="bool-val">false</span>;
         <span class="kw">let </span>recipient = recipient_addr.into();
-        <span class="kw">let </span>content_body: ContentBody = message.into();
+        <span class="kw">let </span><span class="kw-2">mut </span>content_body: ContentBody = message.into();
+
+        <span class="comment">// Only update the expiration timer if it is not set.
+        </span><span class="kw">match </span>content_body {
+            ContentBody::DataMessage(DataMessage {
+                expire_timer: <span class="kw-2">ref mut </span>timer,
+                ..
+            }) <span class="kw">if </span>timer.is_none() =&gt; {
+                <span class="comment">// Set the expire timer to None for errors.
+                </span><span class="kw">let </span>store_expire_timer = <span class="self">self
+                    </span>.config_store
+                    .expire_timer(<span class="kw-2">&amp;</span>Thread::Contact(recipient.uuid))
+                    .unwrap_or_default();
+
+                <span class="kw-2">*</span>timer = store_expire_timer;
+            }
+            <span class="kw">_ </span>=&gt; {}
+        }
 
         <span class="kw">let </span>sender_certificate = <span class="self">self</span>.sender_certificate().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>unidentified_access =
             <span class="self">self</span>.config_store
                 .profile_key(<span class="kw-2">&amp;</span>recipient.uuid)<span class="question-mark">?
                 </span>.map(|profile_key| UnidentifiedAccess {
-                    key: profile_key.derive_access_key(),
+                    key: profile_key.derive_access_key().to_vec(),
                     certificate: sender_certificate.clone(),
                 });
 
@@ -2358,13 +2453,36 @@
         <span class="prelude-val">Ok</span>(upload.<span class="kw">await</span>)
     }
 
-    <span class="doccomment">/// Sends one message in a group (v2).
+    <span class="doccomment">/// Sends one message in a group (v2). The `master_key_bytes` is required to have 32 elements.
+    ///
+    /// This method will automatically update the [DataMessage::expiration_timer] if it is set to
+    /// [None] such that the chat will keep the current expire timer.
     </span><span class="kw">pub async fn </span>send_message_to_group(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         master_key_bytes: <span class="kw-2">&amp;</span>[u8],
-        message: DataMessage,
+        <span class="kw-2">mut </span>message: DataMessage,
         timestamp: u64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&lt;C::Error&gt;&gt; {
+        <span class="comment">// Only update the expiration timer if it is not set.
+        </span><span class="kw">match </span>message {
+            DataMessage {
+                expire_timer: <span class="kw-2">ref mut </span>timer,
+                ..
+            } <span class="kw">if </span>timer.is_none() =&gt; {
+                <span class="comment">// Set the expire timer to None for errors.
+                </span><span class="kw">let </span>store_expire_timer = <span class="self">self
+                    </span>.config_store
+                    .expire_timer(<span class="kw-2">&amp;</span>Thread::Group(
+                        master_key_bytes
+                            .try_into()
+                            .expect(<span class="string">&quot;Master key bytes to be of size 32.&quot;</span>),
+                    ))
+                    .unwrap_or_default();
+
+                <span class="kw-2">*</span>timer = store_expire_timer;
+            }
+            <span class="kw">_ </span>=&gt; {}
+        }
         <span class="kw">let </span><span class="kw-2">mut </span>sender = <span class="self">self</span>.new_message_sender().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>groups_manager = <span class="self">self</span>.groups_manager()<span class="question-mark">?</span>;
@@ -2383,7 +2501,7 @@
                 <span class="self">self</span>.config_store
                     .profile_key(<span class="kw-2">&amp;</span>member.uuid)<span class="question-mark">?
                     </span>.map(|profile_key| UnidentifiedAccess {
-                        key: profile_key.derive_access_key(),
+                        key: profile_key.derive_access_key().to_vec(),
                         certificate: sender_certificate.clone(),
                     });
             recipients.push((member.uuid.into(), unidentified_access));
@@ -2527,6 +2645,29 @@
         <span class="prelude-val">Ok</span>(service_cipher)
     }
 
+    <span class="doccomment">/// Returns the title of a thread (contact or group).
+    </span><span class="kw">pub async fn </span>thread_title(<span class="kw-2">&amp;</span><span class="self">self</span>, thread: <span class="kw-2">&amp;</span>Thread) -&gt; <span class="prelude-ty">Result</span>&lt;String, Error&lt;C::Error&gt;&gt; {
+        <span class="kw">match </span>thread {
+            Thread::Contact(uuid) =&gt; {
+                <span class="kw">let </span>contact = <span class="kw">match </span><span class="self">self</span>.contact_by_id(uuid) {
+                    <span class="prelude-val">Ok</span>(contact) =&gt; contact,
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">log::info!</span>(<span class="string">&quot;Error getting contact by id: {}, {:?}&quot;</span>, e, uuid);
+                        <span class="prelude-val">None
+                    </span>}
+                };
+                <span class="prelude-val">Ok</span>(<span class="kw">match </span>contact {
+                    <span class="prelude-val">Some</span>(contact) =&gt; contact.name,
+                    <span class="prelude-val">None </span>=&gt; uuid.to_string(),
+                })
+            }
+            Thread::Group(id) =&gt; <span class="kw">match </span><span class="self">self</span>.group(id)<span class="question-mark">? </span>{
+                <span class="prelude-val">Some</span>(group) =&gt; <span class="prelude-val">Ok</span>(group.title),
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(<span class="string">&quot;&quot;</span>.to_string()),
+            },
+        }
+    }
+
     <span class="attr">#[deprecated = <span class="string">&quot;use Manager::contact_by_id&quot;</span>]
     </span><span class="kw">pub fn </span>get_contacts(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -2556,7 +2697,7 @@
     master_key_bytes: <span class="kw-2">&amp;</span>[u8],
     revision: <span class="kw-2">&amp;</span>u32,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Group&gt;, Error&lt;C::Error&gt;&gt; {
-    <span class="kw">let </span>save_group = <span class="kw">match </span>config_store.group(master_key_bytes.try_into()<span class="question-mark">?</span>) {
+    <span class="kw">let </span>upsert_group = <span class="kw">match </span>config_store.group(master_key_bytes.try_into()<span class="question-mark">?</span>) {
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(group)) =&gt; {
             <span class="macro">log::debug!</span>(<span class="string">&quot;loaded group from local db {}&quot;</span>, group.title);
             group.revision &lt; <span class="kw-2">*</span>revision
@@ -2568,11 +2709,12 @@
         </span>}
     };
 
-    <span class="kw">if </span>save_group {
-        <span class="macro">log::debug!</span>(<span class="string">&quot;fetching group&quot;</span>);
+    <span class="kw">if </span>upsert_group {
+        <span class="macro">log::debug!</span>(<span class="string">&quot;fetching and saving group&quot;</span>);
         <span class="kw">match </span>groups_manager.fetch_encrypted_group(master_key_bytes).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(group) =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = config_store.save_group(master_key_bytes.try_into()<span class="question-mark">?</span>, group) {
+            <span class="prelude-val">Ok</span>(encrypted_group) =&gt; {
+                <span class="kw">let </span>group = decrypt_group(<span class="kw-2">&amp;</span>master_key_bytes, encrypted_group)<span class="question-mark">?</span>;
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = config_store.save_group(master_key_bytes.try_into()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>group) {
                     <span class="macro">log::error!</span>(<span class="string">&quot;failed to save group {master_key_bytes:?}: {e}&quot;</span>,);
                 }
             }
@@ -2702,5 +2844,4 @@
         <span class="macro">assert!</span>(state.pni_public_key.is_none());
     }
 }
-</code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="presage" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0 (84c898d65 2023-04-16)" data-search-js="search-8a59a8356673ec1f.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</code></pre></div></section></main></body></html>
