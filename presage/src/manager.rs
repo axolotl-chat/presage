@@ -45,11 +45,36 @@ use libsignal_service::{
 use libsignal_service_hyper::push_service::HyperPushService;
 
 use crate::cache::CacheCell;
-use crate::{serde::serde_profile_key, Thread};
+use crate::Thread;
 use crate::{store::Store, Error};
+use crate::ThreadMetadata;
+use crate::libsignal_service::profile_name::ProfileName;
+
 
 type ServiceCipher<C> = cipher::ServiceCipher<C, StdRng>;
 type MessageSender<C> = libsignal_service::prelude::MessageSender<HyperPushService, C, StdRng>;
+pub mod serde_profile_key {
+    use libsignal_service::prelude::ProfileKey;
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(profile_key: &ProfileKey, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&base64::encode(profile_key.bytes))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<ProfileKey, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bytes: [u8; 32] = base64::decode(String::deserialize(deserializer)?)
+            .map_err(serde::de::Error::custom)?
+            .try_into()
+            .map_err(|e: Vec<u8>| serde::de::Error::invalid_length(e.len(), &"32 bytes"))?;
+        Ok(ProfileKey::create(bytes))
+    }
+}
 
 #[derive(Clone)]
 pub struct Manager<Store, State> {
@@ -1503,29 +1528,6 @@ impl<C: Store> Manager<C, Registered> {
     ) -> Result<(), Error<C::Error>> {
         self.config_store.save_thread_metadata(metadata)?;
         Ok(())
-    }
-
-    /// Returns the title of a thread (contact or group).
-    pub async fn thread_title(&self, thread: &Thread) -> Result<String, Error<C::Error>> {
-        match thread {
-            Thread::Contact(uuid) => {
-                let contact = match self.contact_by_id(uuid) {
-                    Ok(contact) => contact,
-                    Err(e) => {
-                        log::info!("Error getting contact by id: {}, {:?}", e, uuid);
-                        None
-                    }
-                };
-                Ok(match contact {
-                    Some(contact) => contact.name,
-                    None => uuid.to_string(),
-                })
-            }
-            Thread::Group(id) => match self.group(id)? {
-                Some(group) => Ok(group.title),
-                None => Ok("".to_string()),
-            },
-        }
     }
 
     /// Returns the title of a thread (contact or group).
