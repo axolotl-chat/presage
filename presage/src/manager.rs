@@ -210,12 +210,19 @@ impl<C: Store> Manager<C, Registration> {
                 .request_voice_verification_code(captcha, None)
                 .await?
         } else {
-            provisioning_manager
+            match provisioning_manager
                 .request_sms_verification_code(captcha, None)
-                .await?
+                .await{
+                    Ok(verification_code_response) => verification_code_response,
+                    Err(e) => {
+                        error!("failed to request sms verification code: {}", e);
+                        return Err(Error::UnknownError(format!("failed to request sms verification code: {}", e)));
+                    }
+                }
         };
 
         if let VerificationCodeResponse::CaptchaRequired = verification_code_response {
+            error!("captcha required");
             return Err(Error::CaptchaRequired);
         }
 
