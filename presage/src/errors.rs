@@ -62,6 +62,10 @@ pub enum Error<S: std::error::Error> {
     Timeout(#[from] tokio::time::error::Elapsed),
     #[error("store error: {0}")]
     Store(S),
+    #[error("unknown error: {0}")]
+    UnknownError(String),
+    #[error("verification error")]
+    VerificationCodeRequestError,
 }
 
 impl<S: StoreError> From<S> for Error<S> {
