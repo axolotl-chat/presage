@@ -23,11 +23,11 @@ use presage::libsignal_service::{
         },
         Content, ProfileKey, Uuid,
     },
-    ThreadMetadata,
-    prelude::proto,
     push_service::DEFAULT_DEVICE_ID,
     Profile, ServiceAddress,
 };
+use presage::ThreadMetadata;
+
 use prost::Message;
 use protobuf::ContentProto;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
