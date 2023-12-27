@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `presage/src/manager/linking.rs`."><title>linking.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="presage" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../presage/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `presage/src/manager/linking.rs`."><title>linking.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="presage" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.1 (a28077b28 2023-12-04)" data-channel="1.74.1" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../presage/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -150,18 +150,10 @@
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>futures::channel::{mpsc, oneshot};
 <span class="kw">use </span>futures::{future, StreamExt};
 <span class="kw">use </span>libsignal_service::configuration::{ServiceConfiguration, SignalServers};
-<span class="kw">use </span>libsignal_service::provisioning::{LinkingManager, SecondaryDeviceProvisioning};
-<span class="kw">use </span>libsignal_service::push_service::DeviceId;
-<span class="kw">use </span>libsignal_service::zkgroup::profiles::ProfileKey;
+<span class="kw">use </span>libsignal_service::provisioning::{link_device, SecondaryDeviceProvisioning};
 <span class="kw">use </span>libsignal_service_hyper::push_service::HyperPushService;
 <span class="kw">use </span>log::info;
 <span class="kw">use </span>rand::distributions::{Alphanumeric, DistString};
@@ -235,13 +227,21 @@
         <span class="kw">let </span>push_service =
             HyperPushService::new(service_configuration, <span class="prelude-val">None</span>, <span class="kw">crate</span>::USER_AGENT.to_string());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>linking_manager: LinkingManager&lt;HyperPushService&gt; =
-            LinkingManager::new(push_service, password.clone());
-
         <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = mpsc::channel(<span class="number">1</span>);
 
-        <span class="kw">let </span>(wait_for_qrcode_scan, registration) = future::join(
-            linking_manager.provision_secondary_device(<span class="kw-2">&amp;mut </span>rng, signaling_key, tx),
+        <span class="comment">// XXX: this is obviously wrong
+        </span><span class="kw">let </span><span class="kw-2">mut </span>pni_store = store.clone();
+
+        <span class="kw">let </span>(wait_for_qrcode_scan, registration_data) = future::join(
+            link_device(
+                <span class="kw-2">&amp;mut </span>store,
+                <span class="kw-2">&amp;mut </span>pni_store,
+                <span class="kw-2">&amp;mut </span>rng,
+                push_service,
+                <span class="kw-2">&amp;</span>password,
+                <span class="kw-2">&amp;</span>device_name,
+                tx,
+            ),
             <span class="kw">async move </span>{
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(SecondaryDeviceProvisioning::Url(url)) = rx.next().<span class="kw">await </span>{
                     <span class="macro">info!</span>(<span class="string">&quot;generating qrcode from provisioning link: {}&quot;</span>, <span class="kw-2">&amp;</span>url);
@@ -251,39 +251,10 @@
                 } <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::LinkError);
                 }
-
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(SecondaryDeviceProvisioning::NewDeviceRegistration {
-                    phone_number,
-                    device_id: DeviceId { device_id },
-                    registration_id,
-                    pni_registration_id,
-                    profile_key,
-                    service_ids,
-                    aci_private_key,
-                    aci_public_key,
-                    pni_private_key,
-                    pni_public_key,
-                }) = rx.next().<span class="kw">await
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(SecondaryDeviceProvisioning::NewDeviceRegistration(data)) =
+                    rx.next().<span class="kw">await
                 </span>{
-                    <span class="macro">info!</span>(<span class="string">&quot;successfully registered device {}&quot;</span>, <span class="kw-2">&amp;</span>service_ids);
-                    <span class="prelude-val">Ok</span>(Registered::with_data(RegistrationData {
-                        signal_servers,
-                        device_name: <span class="prelude-val">Some</span>(device_name),
-                        phone_number,
-                        service_ids,
-                        signaling_key,
-                        password,
-                        device_id: <span class="prelude-val">Some</span>(device_id),
-                        registration_id,
-                        pni_registration_id: <span class="prelude-val">Some</span>(pni_registration_id),
-                        aci_public_key,
-                        aci_private_key,
-                        pni_public_key: <span class="prelude-val">Some</span>(pni_public_key),
-                        pni_private_key: <span class="prelude-val">Some</span>(pni_private_key),
-                        profile_key: ProfileKey::create(
-                            profile_key.try_into().expect(<span class="string">&quot;32 bytes for profile key&quot;</span>),
-                        ),
-                    }))
+                    <span class="prelude-val">Ok</span>(data)
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Err</span>(Error::NoProvisioningMessageReceived)
                 }
@@ -293,24 +264,41 @@
 
         wait_for_qrcode_scan<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>manager = Manager {
-            rng,
-            store,
-            state: registration<span class="question-mark">?</span>,
-        };
+        <span class="kw">match </span>registration_data {
+            <span class="prelude-val">Ok</span>(d) =&gt; {
+                <span class="kw">let </span>registration_data = RegistrationData {
+                    signal_servers,
+                    device_name: <span class="prelude-val">Some</span>(device_name),
+                    phone_number: d.phone_number,
+                    service_ids: d.service_ids,
+                    password,
+                    signaling_key,
+                    device_id: <span class="prelude-val">Some</span>(d.device_id.into()),
+                    registration_id: d.registration_id,
+                    pni_registration_id: <span class="prelude-val">Some</span>(d.pni_registration_id),
+                    aci_public_key: d.aci_public_key,
+                    aci_private_key: d.aci_private_key,
+                    pni_public_key: <span class="prelude-val">Some</span>(d.pni_public_key),
+                    pni_private_key: <span class="prelude-val">Some</span>(d.pni_private_key),
+                    profile_key: d.profile_key,
+                };
 
-        manager.store.save_registration_data(<span class="kw-2">&amp;</span>manager.state.data)<span class="question-mark">?</span>;
+                store.save_registration_data(<span class="kw-2">&amp;</span>registration_data)<span class="question-mark">?</span>;
+                <span class="macro">info!</span>(
+                    <span class="string">&quot;successfully registered device {}&quot;</span>,
+                    <span class="kw-2">&amp;</span>registration_data.service_ids
+                );
 
-        <span class="kw">match </span>(
-            manager.register_pre_keys().<span class="kw">await</span>,
-            manager.set_account_attributes().<span class="kw">await</span>,
-        ) {
-            (<span class="prelude-val">Err</span>(e), <span class="kw">_</span>) | (<span class="kw">_</span>, <span class="prelude-val">Err</span>(e)) =&gt; {
-                <span class="comment">// clear the entire store on any error, there&#39;s no possible recovery here
-                </span>manager.store.clear_registration()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(Manager {
+                    rng,
+                    store,
+                    state: Registered::with_data(registration_data),
+                })
+            }
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                store.clear_registration()<span class="question-mark">?</span>;
                 <span class="prelude-val">Err</span>(e)
             }
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(manager),
         }
     }
 }
