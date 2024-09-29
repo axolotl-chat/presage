@@ -2,6 +2,7 @@
 
 use std::{fmt, ops::RangeBounds, time::SystemTime};
 
+use crate::ThreadMetadata;
 use libsignal_service::{
     content::{ContentBody, Metadata},
     groups_v2::{Group, Timer},
@@ -66,6 +67,11 @@ pub trait ContentsStore: Send + Sync {
     ///
     /// Each items is a tuple consisting of the group master key and its corresponding data.
     type GroupsIter: Iterator<Item = Result<(GroupMasterKeyBytes, Group), Self::ContentsStoreError>>;
+
+    /// Iterator over all stored thread metadata
+    ///
+    /// Each item is a tuple consisting of the thread and its corresponding metadata.
+    type ThreadMetadataIter: Iterator<Item = Result<ThreadMetadata, Self::ContentsStoreError>>;
 
     /// Iterator over all stored messages
     type MessagesIter: Iterator<Item = Result<Content, Self::ContentsStoreError>>;
@@ -282,6 +288,22 @@ pub trait ContentsStore: Send + Sync {
         uuid: Uuid,
         key: ProfileKey,
         profile: Profile,
+    ) -> Result<(), Self::ContentsStoreError>;
+  
+    /// Retrieve ThereadMetadata for all threads.
+    fn thread_metadatas(&self) -> Result<Self::ThreadMetadataIter, Self::ContentsStoreError>;
+
+    /// Retrieve ThereadMetadata for a single thread.
+    fn thread_metadata(
+        &self,
+        thread: Thread,
+    ) -> Result<Option<ThreadMetadata>, Self::ContentsStoreError>;
+
+    /// Save ThereadMetadata for a single thread.
+    /// This will overwrite any existing metadata for the thread.
+    fn save_thread_metadata(
+        &mut self,
+        metadata: ThreadMetadata,
     ) -> Result<(), Self::ContentsStoreError>;
 
     /// Retrieve a profile by [Uuid] and [ProfileKey].

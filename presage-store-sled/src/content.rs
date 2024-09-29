@@ -15,7 +15,10 @@ use presage::{
     },
     store::{ContentExt, ContentsStore, StickerPack, Thread},
     AvatarBytes,
+    
 };
+use presage::ThreadMetadata;
+
 use prost::Message;
 use serde::de::DeserializeOwned;
 use sha2::{Digest, Sha256};
@@ -31,6 +34,8 @@ const SLED_TREE_GROUP_AVATARS: &str = "group_avatars";
 const SLED_TREE_GROUPS: &str = "groups";
 const SLED_TREE_PROFILES: &str = "profiles";
 const SLED_TREE_THREADS_PREFIX: &str = "threads";
+const SLED_TREE_THREADS_METADATA: &str = "threads_metadata";
+
 
 impl ContentsStore for SledStore {
     type ContentsStoreError = SledStoreError;
@@ -39,6 +44,7 @@ impl ContentsStore for SledStore {
     type GroupsIter = SledGroupsIter;
     type MessagesIter = SledMessagesIter;
     type StickerPacksIter = SledStickerPacksIter;
+    type ThreadMetadataIter = SledThreadMetadataIter;
 
     fn clear_profiles(&mut self) -> Result<(), Self::ContentsStoreError> {
         let db = self.write();
@@ -292,6 +298,32 @@ impl ContentsStore for SledStore {
             iter: self.read().open_tree(SLED_TREE_STICKER_PACKS)?.iter(),
         })
     }
+
+    fn save_thread_metadata(
+        &mut self,
+        metadata: ThreadMetadata,
+    ) -> Result<(), Self::ContentsStoreError> {
+        let key = self.thread_metadata_key(metadata.thread.clone());
+        self.insert(SLED_TREE_THREADS_METADATA, key, metadata)?;
+        Ok(())
+    }
+
+    fn thread_metadata(
+        &self,
+        thread: Thread,
+    ) -> Result<Option<ThreadMetadata>, Self::ContentsStoreError> {
+        let key = self.thread_metadata_key(thread);
+        self.get(SLED_TREE_THREADS_METADATA, key)
+    }
+
+    fn thread_metadatas(&self) -> Result<Self::ThreadMetadataIter, SledStoreError> {
+        let tree = self.read().open_tree(SLED_TREE_THREADS_METADATA)?;
+        let iter = tree.iter();
+        Ok(SledThreadMetadataIter {
+            cipher: self.cipher.clone(),
+            iter,
+        })
+    }
 }
 
 pub struct SledContactsIter {
@@ -467,4 +499,26 @@ fn messages_thread_tree_name(t: &Thread) -> String {
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
     format!("{SLED_TREE_THREADS_PREFIX}:{:x}", hasher.finalize())
+}
+
+pub struct SledThreadMetadataIter {
+    cipher: Option<Arc<presage_store_cipher::StoreCipher>>,
+    iter: sled::Iter,
+}
+
+impl Iterator for SledThreadMetadataIter {
+    type Item = Result<ThreadMetadata, SledStoreError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next()?
+            .map_err(SledStoreError::from)
+            .and_then(|(_key, value)| {
+                self.cipher.as_ref().map_or_else(
+                    || serde_json::from_slice(&value).map_err(SledStoreError::from),
+                    |c| c.decrypt_value(&value).map_err(SledStoreError::from),
+                )
+            })
+            .into()
+    }
 }

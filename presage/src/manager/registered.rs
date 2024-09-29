@@ -45,7 +45,7 @@ use tokio::sync::Mutex;
 use url::Url;
 
 use crate::cache::CacheCell;
-use crate::serde::serde_profile_key;
+use crate::serializers::serde_profile_key;
 use crate::store::{ContentsStore, Sticker, StickerPack, StickerPackManifest, Store, Thread};
 use crate::{AvatarBytes, Error, Manager};
 

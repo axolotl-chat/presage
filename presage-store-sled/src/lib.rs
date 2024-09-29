@@ -17,7 +17,7 @@ use presage::{
         },
     },
     manager::RegistrationData,
-    store::{ContentsStore, StateStore, Store},
+    store::{ContentsStore, StateStore, Store, Thread},
 };
 use protocol::{AciSledStore, PniSledStore, SledProtocolStore, SledTrees};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -309,6 +309,13 @@ impl SledStore {
         let key_base64 = BASE64_STANDARD.encode(key_bytes);
         self.insert(SLED_TREE_STATE, T::identity_keypair(), key_base64)?;
         Ok(())
+    }
+    
+    fn thread_metadata_key(&self, thread: Thread) -> Vec<u8> {
+        match thread {
+            Thread::Contact(contact) => contact.to_string().into_bytes(),
+            Thread::Group(group) => group.to_vec(),
+        }
     }
 }
 
